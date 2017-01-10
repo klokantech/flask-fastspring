@@ -27,6 +27,7 @@ class FastSpring:
     head_template = """\
 <script type="text/javascript">
 var fscSession = {{ session|tojson }};
+{% if webhook %}
 function fastspringOnPopupClosed(data) {
   if (!data) return;
   var xhr = new XMLHttpRequest();
@@ -51,12 +52,13 @@ function fastspringOnPopupClosed(data) {
       "payload": {{ payload }}
   }));
 }
+{% endif %}
 </script>
 <script
   id="fsc-api"
   src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.7.2/fastspring-builder.min.js"
   type="text/javascript"
-  data-popup-closed="fastspringOnPopupClosed"
+  {% if webhook %}data-popup-closed="fastspringOnPopupClosed"{% endif %}
   data-storefront="{{ storefront }}">
 </script>"""
 
@@ -73,7 +75,7 @@ function fastspringOnPopupClosed(data) {
         self.username = app.config['FASTSPRING_USERNAME']
         self.password = app.config['FASTSPRING_PASSWORD']
 
-    def render_head(self, webhook, session=None, payload=None):
+    def render_head(self, webhook=None, session=None, payload=None):
         html = render_template_string(
             self.head_template,
             storefront=self.storefront,
