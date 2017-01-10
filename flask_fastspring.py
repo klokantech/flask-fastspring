@@ -1,6 +1,10 @@
 import requests
 
-from flask import Markup, render_template_string
+from datetime import datetime
+from flask import Markup, current_app, render_template_string
+from sqlalchemy import Boolean, Column, DateTime, Text
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.orm import deferred
 
 
 class FastSpringAPIError(Exception):
@@ -97,3 +101,58 @@ function fastspringOnPopupClosed(data) {
         if data['result'] != 'success':
             raise FastSpringAPIError(response)
         return data
+
+
+class OrderMixin:
+
+    order_id = Column(Text, primary_key=True)
+    reference = Column(Text, nullable=False, unique=True)
+    invoice = Column(Text, nullable=False)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    is_complete = Column(Boolean, default=False, nullable=False)
+    data = deferred(Column(JSON, nullable=False))
+
+    @classmethod
+    def fetch(cls, order_id):
+        data = current_app.extensions['fastspring'].fetch_order(order_id)
+        return cls(
+            order_id=data['order'],
+            reference=data['reference'],
+            invoice=data['invoiceUrl'],
+            changed_at=milliseconds_to_datetime(data['changed']),
+            is_complete=data['completed'],
+            data=data)
+
+    def subscription_item(self):
+        candidates = []
+        for item in self.data['items']:
+            if item.get('subscription'):
+                candidates.append(item)
+        if len(candidates) != 1:
+            return None
+        return candidates[0]
+
+
+class SubscriptionMixin:
+
+    subscription_id = Column(Text, primary_key=True)
+    changed_at = Column(DateTime(timezone=True), nullable=False)
+    next_at = Column(DateTime(timezone=True), nullable=False)
+    is_active = Column(Boolean, nullable=False)
+    state = Column(Text, nullable=False)
+    data = deferred(Column(JSON, nullable=False))
+
+    @classmethod
+    def fetch(cls, subscription_id):
+        data = current_app.extensions['fastspring'].fetch_subscription(subscription_id)
+        return cls(
+            subscription_id=data['subscription'],
+            changed_at=milliseconds_to_datetime(data['changed']),
+            next_at=milliseconds_to_datetime(data['next']),
+            is_active=data['active'],
+            state=data['state'],
+            data=data)
+
+
+def milliseconds_to_datetime(m):
+    return datetime.utcfromtimestamp(m / 1000)
