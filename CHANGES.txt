@@ -1,3 +1,4 @@
+v1.3, 2017-01-10 -- Correctly parse timezone for mixin timestamps.
 v1.2, 2017-01-10 -- Synchronization methods instead of fetch factories.
 v1.1, 2017-01-10 -- SQLAlchemy mixins, optional webhook.
 v1.0, 2017-01-09 -- Initial release.

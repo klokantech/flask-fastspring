@@ -2,10 +2,14 @@ import requests
 
 from datetime import datetime
 from flask import Markup, current_app, render_template_string
+from psycopg2.tz import FixedOffsetTimezone
 from sqlalchemy import Boolean, Column, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import deferred
+
+
+UTC = FixedOffsetTimezone(offset=0)
 
 
 class FastSpringAPIError(Exception):
@@ -166,4 +170,4 @@ class SubscriptionMixin:
 
 
 def milliseconds_to_datetime(m):
-    return datetime.utcfromtimestamp(m / 1000)
+    return datetime.utcfromtimestamp(m / 1000).replace(tzinfo=UTC)
