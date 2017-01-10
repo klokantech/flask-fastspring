@@ -4,6 +4,7 @@ from datetime import datetime
 from flask import Markup, current_app, render_template_string
 from sqlalchemy import Boolean, Column, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import deferred
 
 
@@ -110,7 +111,10 @@ class OrderMixin:
     invoice = Column(Text, nullable=False)
     changed_at = Column(DateTime(timezone=True), nullable=False)
     is_complete = Column(Boolean, default=False, nullable=False)
-    data = deferred(Column(JSON, nullable=False))
+
+    @declared_attr
+    def data(cls):
+        return deferred(Column(JSON, nullable=False))
 
     @classmethod
     def fetch(cls, order_id):
@@ -140,7 +144,10 @@ class SubscriptionMixin:
     next_at = Column(DateTime(timezone=True), nullable=False)
     is_active = Column(Boolean, nullable=False)
     state = Column(Text, nullable=False)
-    data = deferred(Column(JSON, nullable=False))
+
+    @declared_attr
+    def data(cls):
+        return deferred(Column(JSON, nullable=False))
 
     @classmethod
     def fetch(cls, subscription_id):
