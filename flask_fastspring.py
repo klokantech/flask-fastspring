@@ -118,16 +118,17 @@ class OrderMixin:
     def data(cls):
         return deferred(Column(JSON, nullable=False))
 
-    @classmethod
-    def fetch(cls, order_id):
-        data = current_app.extensions['fastspring'].fetch_order(order_id)
-        return cls(
-            order_id=data['order'],
-            reference=data['reference'],
-            invoice=data['invoiceUrl'],
-            changed_at=milliseconds_to_datetime(data['changed']),
-            is_complete=data['completed'],
-            data=data)
+    def synchronize(self):
+        data = current_app.extensions['fastspring'].fetch_order(self.order_id)
+        changed_at = milliseconds_to_datetime(data['changed'])
+        if self.changed_at is not None and self.changed_at >= changed_at:
+            return False
+        self.reference = data['reference']
+        self.invoice = data['invoiceUrl']
+        self.changed_at = changed_at
+        self.is_complete = data['completed']
+        self.data = data
+        return True
 
     def subscription_item(self):
         candidates = []
@@ -151,16 +152,17 @@ class SubscriptionMixin:
     def data(cls):
         return deferred(Column(JSON, nullable=False))
 
-    @classmethod
-    def fetch(cls, subscription_id):
-        data = current_app.extensions['fastspring'].fetch_subscription(subscription_id)
-        return cls(
-            subscription_id=data['subscription'],
-            changed_at=milliseconds_to_datetime(data['changed']),
-            next_at=milliseconds_to_datetime(data['next']),
-            is_active=data['active'],
-            state=data['state'],
-            data=data)
+    def synchronize(self):
+        data = current_app.extensions['fastspring'].fetch_subscription(self.subscription_id)  # noqa
+        changed_at = milliseconds_to_datetime(data['changed'])
+        if self.changed_at is not None and self.changed_at >= changed_at:
+            return False
+        self.changed_at = changed_at
+        self.next_at = milliseconds_to_datetime(data['next'])
+        self.is_active = data['active']
+        self.state = data['state']
+        self.data = data
+        return True
 
 
 def milliseconds_to_datetime(m):
