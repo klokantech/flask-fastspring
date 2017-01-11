@@ -115,7 +115,7 @@ class OrderMixin:
     order_id = Column(Text, primary_key=True)
     reference = Column(Text, nullable=False, unique=True)
     invoice = Column(Text, nullable=False)
-    changed_at = Column(DateTime(timezone=True), nullable=False)
+    changed = Column(DateTime(timezone=True), nullable=False)
     is_complete = Column(Boolean, default=False, nullable=False)
 
     @declared_attr
@@ -124,12 +124,12 @@ class OrderMixin:
 
     def synchronize(self):
         data = current_app.extensions['fastspring'].fetch_order(self.order_id)
-        changed_at = milliseconds_to_datetime(data['changed'])
-        if self.changed_at is not None and self.changed_at >= changed_at:
+        changed = milliseconds_to_datetime(data['changed'])
+        if self.changed is not None and self.changed >= changed:
             return False
         self.reference = data['reference']
         self.invoice = data['invoiceUrl']
-        self.changed_at = changed_at
+        self.changed = changed
         self.is_complete = data['completed']
         self.data = data
         return True
@@ -147,8 +147,11 @@ class OrderMixin:
 class SubscriptionMixin:
 
     subscription_id = Column(Text, primary_key=True)
-    changed_at = Column(DateTime(timezone=True), nullable=False)
-    next_at = Column(DateTime(timezone=True), nullable=False)
+    begin = Column(DateTime(timezone=True), nullable=False)
+    changed = Column(DateTime(timezone=True), nullable=False)
+    next_event = Column(DateTime(timezone=True))
+    next_charge = Column(DateTime(timezone=True))
+    end = Column(DateTime(timezone=True))
     is_active = Column(Boolean, nullable=False)
     state = Column(Text, nullable=False)
 
@@ -158,11 +161,14 @@ class SubscriptionMixin:
 
     def synchronize(self):
         data = current_app.extensions['fastspring'].fetch_subscription(self.subscription_id)  # noqa
-        changed_at = milliseconds_to_datetime(data['changed'])
-        if self.changed_at is not None and self.changed_at >= changed_at:
+        changed = milliseconds_to_datetime(data['changed'])
+        if self.changed is not None and self.changed >= changed:
             return False
-        self.changed_at = changed_at
-        self.next_at = milliseconds_to_datetime(data['next'])
+        self.begin = milliseconds_to_datetime(data['begin'])
+        self.changed = changed
+        self.next_event = milliseconds_to_datetime(data.get('next'))
+        self.next_charge = milliseconds_to_datetime(data.get('nextChargeDate'))
+        self.end = milliseconds_to_datetime(data.get('end'))
         self.is_active = data['active']
         self.state = data['state']
         self.data = data
@@ -170,4 +176,6 @@ class SubscriptionMixin:
 
 
 def milliseconds_to_datetime(m):
+    if m is None:
+        return None
     return datetime.utcfromtimestamp(m / 1000).replace(tzinfo=UTC)
