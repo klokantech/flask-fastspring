@@ -42,7 +42,7 @@ function fastspringOnPopupClosed(data) {
       if (xhr.status === 200) {
         window.location.replace("{{ request.url }}");
       } else if (xhr.status === 201 || (301 <= xhr.status && xhr.status <= 303)) {
-        window.location.replace(xhr.GetResponseHeader("Location"));
+        window.location.replace(xhr.getResponseHeader("Location"));
       } else {
         var message = "ERROR: Could not process order: " + data["reference"];
         console.log(message);
