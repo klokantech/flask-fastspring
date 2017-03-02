@@ -53,7 +53,7 @@ function fastspringOnPopupClosed(data) {
   xhr.send(JSON.stringify({
       "order_id": data["id"],
       "reference": data["reference"],
-      "payload": {{ payload }}
+      "payload": {{ payload|tojson }}
   }));
 }
 {% endif %}
