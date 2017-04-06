@@ -7,5 +7,6 @@ setup(
     py_modules=['flask_fastspring'],
     install_requires=[
         'Flask>=0.11',
+        'SQLAlchemy>=1.0',
         'requests>=2.12',
     ])
