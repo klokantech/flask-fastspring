@@ -85,7 +85,7 @@ function fastspringOnPopupClosed(data) {
             storefront=self.storefront,
             webhook=webhook,
             session=session,
-            payload=payload if payload is not None else 'null')
+            payload=payload)
         return Markup(html)
 
     def render_button(self, product):
