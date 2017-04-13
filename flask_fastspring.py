@@ -24,8 +24,9 @@ class FastSpring:
         self.storefront = None
         self.username = None
         self.password = None
-        self.private_key = None
         self.openssl = None
+        self.access_key = None
+        self.private_key = None
         if app is not None:
             self.init_app(app)
 
@@ -39,8 +40,10 @@ class FastSpring:
         Because FastSpring actually has a testing mode, these
         options are all mandatory.
 
-        The FASTSPRING_PRIVATE_KEY option is a path to the
-        RSA private key used for encrypting secured payloads.
+        For secure payloads, configure the path to the RSA
+        private key with the FASTSPRING_PRIVATE_KEY option,
+        and the API access key with the FASTSPRING_ACCESS_KEY
+        option.
         """
         app.extensions['fastspring'] = self
         self.storefront = app.config['FASTSPRING_STOREFRONT']
@@ -49,6 +52,7 @@ class FastSpring:
         private_key = app.config.get('FASTSPRING_PRIVATE_KEY')
         if private_key is not None:
             self.openssl = openssl_backend()
+            self.access_key = app.config['FASTSPRING_ACCESS_KEY']
             with open(private_key, 'rb') as fp:
                 self.private_key = load_pem_private_key(
                     fp.read(), password=None, backend=self.openssl)
@@ -93,6 +97,7 @@ class FastSpring:
         html = render_template_string(
             HEAD_TEMPLATE,
             storefront=self.storefront,
+            access_key=self.access_key,
             webhook=webhook,
             session=session,
             payload=payload)
@@ -271,6 +276,7 @@ function fastspringOnPopupClosed(data) {
   src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.7.2/fastspring-builder.min.js"
   type="text/javascript"
   {% if webhook %}data-popup-closed="fastspringOnPopupClosed"{% endif %}
+  {% if access_key %}data-access-key="{{ access_key }}"{% endif %}
   data-storefront="{{ storefront }}">
 </script>
 """
