@@ -9,62 +9,7 @@ from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import deferred
 
 
-UTC = FixedOffsetTimezone(offset=0)
-
-
-class FastSpringAPIError(Exception):
-
-    def __init__(self, response):
-        self.response = response
-
-    def __str__(self):
-        template = 'FastSpring API {} at {} failed with status code {}:\n{}'
-        return template.format(
-            self.response.request.method,
-            self.response.request.url,
-            self.response.status_code,
-            self.response.text)
-
-
 class FastSpring:
-
-    head_template = """\
-<script type="text/javascript">
-var fscSession = {{ session|tojson }};
-{% if webhook %}
-function fastspringOnPopupClosed(data) {
-  if (!data) return;
-  var xhr = new XMLHttpRequest();
-  xhr.open("POST", "{{ webhook }}", true);
-  xhr.setRequestHeader("Content-Type", "application/json");
-  xhr.onreadystatechange = function() {
-    if (xhr.readyState === XMLHttpRequest.DONE) {
-      if (xhr.status === 200) {
-        window.location.replace("{{ request.url }}");
-      } else if (xhr.status === 201 || (301 <= xhr.status && xhr.status <= 303)) {
-        window.location.replace(xhr.getResponseHeader("Location"));
-      } else {
-        var message = "ERROR: Could not process order: " + data["reference"];
-        console.log(message);
-        alert(message);
-      }
-    }
-  };
-  xhr.send(JSON.stringify({
-      "order_id": data["id"],
-      "reference": data["reference"],
-      "payload": {{ payload|tojson }}
-  }));
-}
-{% endif %}
-</script>
-<script
-  id="fsc-api"
-  src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.7.2/fastspring-builder.min.js"
-  type="text/javascript"
-  {% if webhook %}data-popup-closed="fastspringOnPopupClosed"{% endif %}
-  data-storefront="{{ storefront }}">
-</script>"""
 
     def __init__(self, app=None):
         self.storefront = None
@@ -81,7 +26,7 @@ function fastspringOnPopupClosed(data) {
 
     def render_head(self, webhook=None, session=None, payload=None):
         html = render_template_string(
-            self.head_template,
+            HEAD_TEMPLATE,
             storefront=self.storefront,
             webhook=webhook,
             session=session,
@@ -103,10 +48,10 @@ function fastspringOnPopupClosed(data) {
             'https://api.fastspring.com/{}'.format(uri),
             auth=(self.username, self.password))
         if response.status_code != 200:
-            raise FastSpringAPIError(response)
+            raise APIError(response)
         data = response.json()
         if data['result'] != 'success':
-            raise FastSpringAPIError(response)
+            raise APIError(response)
         return data
 
 
@@ -175,7 +120,64 @@ class SubscriptionMixin:
         return True
 
 
+class APIError(Exception):
+
+    def __init__(self, response):
+        self.response = response
+
+    def __str__(self):
+        template = 'FastSpring API {} at {} failed with status code {}:\n{}'
+        return template.format(
+            self.response.request.method,
+            self.response.request.url,
+            self.response.status_code,
+            self.response.text)
+
+
+UTC = FixedOffsetTimezone(offset=0)
+
+
 def milliseconds_to_datetime(m):
     if m is None:
         return None
     return datetime.utcfromtimestamp(m / 1000).replace(tzinfo=UTC)
+
+
+HEAD_TEMPLATE = """\
+<script type="text/javascript">
+var fscSession = {{ session|tojson }};
+{% if webhook %}
+function fastspringOnPopupClosed(data) {
+  if (!data) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open("POST", "{{ webhook }}", true);
+  xhr.setRequestHeader("Content-Type", "application/json");
+  xhr.onreadystatechange = function() {
+    if (xhr.readyState === XMLHttpRequest.DONE) {
+      if (xhr.status === 200) {
+        window.location.replace("{{ request.url }}");
+      } else if (xhr.status === 201 || (301 <= xhr.status && xhr.status <= 303)) {
+        window.location.replace(xhr.getResponseHeader("Location"));
+      } else {
+        var message = "ERROR: Could not process order: " + data["reference"];
+        console.log(message);
+        alert(message);
+      }
+    }
+  };
+  xhr.send(JSON.stringify({
+      "order_id": data["id"],
+      "reference": data["reference"],
+      "payload": {{ payload|tojson }}
+  }));
+}
+{% endif %}
+</script>
+<script
+  id="fsc-api"
+  src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.7.2/fastspring-builder.min.js"
+  type="text/javascript"
+  {% if webhook %}data-popup-closed="fastspringOnPopupClosed"{% endif %}
+  data-storefront="{{ storefront }}">
+</script>
+"""
