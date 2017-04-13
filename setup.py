@@ -8,5 +8,6 @@ setup(
     install_requires=[
         'Flask>=0.11',
         'SQLAlchemy>=1.0',
+        'cryptography>=1.6',
         'requests>=2.12',
     ])

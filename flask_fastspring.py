@@ -1,7 +1,16 @@
+import json
 import requests
 
+from base64 import b64encode
+from cryptography.hazmat.backends import _available_backends
+from cryptography.hazmat.primitives.ciphers import Cipher
+from cryptography.hazmat.primitives.ciphers.algorithms import AES
+from cryptography.hazmat.primitives.ciphers.modes import ECB
+from cryptography.hazmat.primitives.padding import PKCS7
+from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from datetime import datetime
 from flask import Markup, current_app, render_template_string
+from os import urandom
 from psycopg2.tz import FixedOffsetTimezone
 from sqlalchemy import Boolean, Column, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSON
@@ -15,14 +24,70 @@ class FastSpring:
         self.storefront = None
         self.username = None
         self.password = None
+        self.private_key = None
+        self.openssl = None
         if app is not None:
             self.init_app(app)
 
     def init_app(self, app):
+        """Initialize the extension.
+
+        To authenticate with FastSpring API, configure the
+        FASTSPRING_USERNAME and FASTSPRING_PASSWORD options.
+        The FASTSPRING_STOREFRONT option determines which
+        storefront will be used, ie. testing or production.
+        Because FastSpring actually has a testing mode, these
+        options are all mandatory.
+
+        The FASTSPRING_PRIVATE_KEY option is a path to the
+        RSA private key used for encrypting secured payloads.
+        """
         app.extensions['fastspring'] = self
         self.storefront = app.config['FASTSPRING_STOREFRONT']
         self.username = app.config['FASTSPRING_USERNAME']
         self.password = app.config['FASTSPRING_PASSWORD']
+        private_key = app.config.get('FASTSPRING_PRIVATE_KEY')
+        if private_key is not None:
+            self.openssl = openssl_backend()
+            with open(private_key, 'rb') as fp:
+                self.private_key = load_pem_private_key(
+                    fp.read(), password=None, backend=self.openssl)
+
+    def secure(self, payload):
+        """Return payload secured with random key.
+
+        The return value is in the format expected by the FastSpring
+        session variable. That means you can do the following.
+
+        fastspring.render_head(
+            webhook=url_for('...'),
+            session={
+                'reset': True,
+                'secure': fastspring.secure({
+                    ...
+                }),
+            })
+        """
+        key = urandom(16)
+        return {
+            'payload': self.secure_payload(key, json.dumps(payload).encode()),
+            'key': self.secure_key(key),
+        }
+
+    def secure_payload(self, key, payload):
+        """Return payload secured with key."""
+        result = []
+        padder = PKCS7(128).padder()
+        encryptor = Cipher(AES(key), ECB(), backend=self.openssl).encryptor()
+        result.append(encryptor.update(padder.update(payload)))
+        result.append(encryptor.update(padder.finalize()))
+        result.append(encryptor.finalize())
+        return b64encode(b''.join(result)).decode()
+
+    def secure_key(self, key):
+        """Return key secured with RSA private key."""
+        result = openssl_private_encrypt(self.private_key, key, self.openssl)
+        return b64encode(result).decode()
 
     def render_head(self, webhook=None, session=None, payload=None):
         html = render_template_string(
@@ -132,6 +197,34 @@ class APIError(Exception):
             self.response.request.url,
             self.response.status_code,
             self.response.text)
+
+
+def openssl_backend():
+    """Return OpenSSL cryptography backend or fail."""
+    for backend in _available_backends():
+        if backend.name == 'openssl':
+            return backend
+    raise Exception('Could not find OpenSSL cryptography backend')
+
+
+def openssl_private_encrypt(key, data, backend):
+    """Encrypt data with RSA private key.
+
+    This is a rewrite of the function from PHP, using cryptography
+    FFI bindings to the OpenSSL library. Private key encryption is
+    non-standard operation and Python packages either don't offer
+    it at all, or it's incompatible with the PHP version.
+
+    The backend argument MUST be the OpenSSL cryptography backend.
+    """
+    length = backend._lib.EVP_PKEY_size(key._evp_pkey)
+    buffer = backend._ffi.new('unsigned char[]', length)
+    result = backend._lib.RSA_private_encrypt(
+        len(data), data, buffer,
+        backend._lib.EVP_PKEY_get1_RSA(key._evp_pkey),
+        backend._lib.RSA_PKCS1_PADDING)
+    backend.openssl_assert(result == length)
+    return backend._ffi.buffer(buffer)[:]
 
 
 UTC = FixedOffsetTimezone(offset=0)
