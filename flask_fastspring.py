@@ -115,7 +115,7 @@ class FastSpring:
 
     def fetch(self, uri):
         response = requests.get(
-            'https://api.fastspring.com/{}'.format(uri),
+            'https://api.fastspring.com' + uri,
             auth=(self.username, self.password))
         if response.status_code != 200:
             raise APIError(response)
