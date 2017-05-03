@@ -260,8 +260,10 @@ function fastspringOnPopupClosed(data) {
         window.onbeforeunload = function() {};
         window.location.replace("{{ request.url }}");
       } else if (xhr.status === 201 || (301 <= xhr.status && xhr.status <= 303)) {
+        window.onbeforeunload = function() {};
         window.location.replace(xhr.getResponseHeader("Location"));
       } else {
+        window.onbeforeunload = function() {};
         var message = "ERROR: Could not process order: " + data["reference"];
         console.log(message);
         alert(message);
