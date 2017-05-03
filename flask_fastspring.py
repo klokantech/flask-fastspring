@@ -245,6 +245,10 @@ HEAD_TEMPLATE = """\
 <script type="text/javascript">
 var fscSession = {{ session|tojson }};
 {% if webhook %}
+window.onbeforeunload = confirmExit;
+function confirmExit() {
+  return "You have attempted to leave this page. Are you sure?";
+}
 function fastspringOnPopupClosed(data) {
   if (!data) return;
   var xhr = new XMLHttpRequest();
@@ -253,6 +257,7 @@ function fastspringOnPopupClosed(data) {
   xhr.onreadystatechange = function() {
     if (xhr.readyState === XMLHttpRequest.DONE) {
       if (xhr.status === 200) {
+        window.onbeforeunload = function() {};
         window.location.replace("{{ request.url }}");
       } else if (xhr.status === 201 || (301 <= xhr.status && xhr.status <= 303)) {
         window.location.replace(xhr.getResponseHeader("Location"));
