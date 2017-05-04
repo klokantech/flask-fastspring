@@ -245,11 +245,8 @@ HEAD_TEMPLATE = """\
 <script type="text/javascript">
 var fscSession = {{ session|tojson }};
 {% if webhook %}
-window.onbeforeunload = confirmExit;
-function confirmExit() {
-  return "You have attempted to leave this page. Are you sure?";
-}
-function fastspringOnPopupClosed(data) {
+var fastspringRedirectUrl;
+function fastspringOnPopupWebhookReceived(data) {
   if (!data) return;
   var xhr = new XMLHttpRequest();
   xhr.open("POST", "{{ webhook }}", true);
@@ -257,16 +254,14 @@ function fastspringOnPopupClosed(data) {
   xhr.onreadystatechange = function() {
     if (xhr.readyState === XMLHttpRequest.DONE) {
       if (xhr.status === 200) {
-        window.onbeforeunload = function() {};
-        window.location.replace("{{ request.url }}");
+        fastspringRedirectUrl = '{{ request.url }}';
       } else if (xhr.status === 201 || (301 <= xhr.status && xhr.status <= 303)) {
-        window.onbeforeunload = function() {};
-        window.location.replace(xhr.getResponseHeader("Location"));
+        fastspringRedirectUrl = xhr.getResponseHeader("Location");
       } else {
-        window.onbeforeunload = function() {};
         var message = "ERROR: Could not process order: " + data["reference"];
         console.log(message);
         alert(message);
+        fastspringRedirectUrl = null;
       }
     }
   };
@@ -276,13 +271,22 @@ function fastspringOnPopupClosed(data) {
       "payload": {{ payload|tojson }}
   }));
 }
+function fastspringOnPopupClosed(data) {
+  if (!data) return;
+  if (fastspringRedirectUrl) {
+    window.location.replace(fastspringRedirectUrl);
+  }
+}
 {% endif %}
 </script>
 <script
   id="fsc-api"
   src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.7.2/fastspring-builder.min.js"
   type="text/javascript"
-  {% if webhook %}data-popup-closed="fastspringOnPopupClosed"{% endif %}
+  {% if webhook %}
+  data-popup-webhook-received="fastspringOnPopupWebhookReceived"
+  data-popup-closed="fastspringOnPopupClosed"
+  {% endif %}
   {% if access_key %}data-access-key="{{ access_key }}"{% endif %}
   data-storefront="{{ storefront }}">
 </script>
