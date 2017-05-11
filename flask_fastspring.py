@@ -21,6 +21,7 @@ from sqlalchemy.orm import deferred
 class FastSpring:
 
     def __init__(self, app=None):
+        self.debug = None
         self.storefront = None
         self.username = None
         self.password = None
@@ -46,13 +47,16 @@ class FastSpring:
         option.
         """
         app.extensions['fastspring'] = self
+        self.debug = app.debug
         self.storefront = app.config['FASTSPRING_STOREFRONT']
         self.username = app.config['FASTSPRING_USERNAME']
         self.password = app.config['FASTSPRING_PASSWORD']
+        self.access_key = app.config.get('FASTSPRING_ACCESS_KEY')
+        if self.debug:
+            return
         private_key = app.config.get('FASTSPRING_PRIVATE_KEY')
         if private_key is not None:
             self.openssl = openssl_backend()
-            self.access_key = app.config['FASTSPRING_ACCESS_KEY']
             with open(private_key, 'rb') as fp:
                 self.private_key = load_pem_private_key(
                     fp.read(), password=None, backend=self.openssl)
@@ -72,24 +76,35 @@ class FastSpring:
                 }),
             })
         """
-        key = urandom(16)
+        key = self.random_key()
         return {
-            'payload': self.secure_payload(key, json.dumps(payload).encode()),
+            'payload': self.secure_payload(key, payload),
             'key': self.secure_key(key),
         }
 
+    def random_key(self):
+        """Return random AES key."""
+        if self.debug:
+            return ''
+        return urandom(16)
+
     def secure_payload(self, key, payload):
-        """Return payload secured with key."""
-        result = []
+        """Return payload secured with AES key."""
+        if self.debug:
+            return payload
         padder = PKCS7(128).padder()
         encryptor = Cipher(AES(key), ECB(), backend=self.openssl).encryptor()
-        result.append(encryptor.update(padder.update(payload)))
+        result = []
+        data = json.dumps(payload).encode()
+        result.append(encryptor.update(padder.update(data)))
         result.append(encryptor.update(padder.finalize()))
         result.append(encryptor.finalize())
         return b64encode(b''.join(result)).decode()
 
     def secure_key(self, key):
-        """Return key secured with RSA private key."""
+        """Return AES key secured with RSA private key."""
+        if self.debug:
+            return key
         result = openssl_private_encrypt(self.private_key, key, self.openssl)
         return b64encode(result).decode()
 
