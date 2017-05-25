@@ -264,12 +264,12 @@ var fastspringRedirectUrl;
 function fastspringOnPopupWebhookReceived(data) {
   if (!data) return;
   var xhr = new XMLHttpRequest();
-  xhr.open("POST", "{{ webhook }}", true);
+  xhr.open("POST", "{{ webhook | safe }}", true);
   xhr.setRequestHeader("Content-Type", "application/json");
   xhr.onreadystatechange = function() {
     if (xhr.readyState === XMLHttpRequest.DONE) {
       if (xhr.status === 200) {
-        fastspringRedirectUrl = '{{ request.url }}';
+        fastspringRedirectUrl = '{{ request.url | safe }}';
       } else if (xhr.status === 201 || (301 <= xhr.status && xhr.status <= 303)) {
         fastspringRedirectUrl = xhr.getResponseHeader("Location");
       } else {
