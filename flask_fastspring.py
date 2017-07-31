@@ -296,7 +296,7 @@ function fastspringOnPopupClosed(data) {
 </script>
 <script
   id="fsc-api"
-  src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.7.2/fastspring-builder.min.js"
+  src="https://d1f8f9xcsvx3ha.cloudfront.net/sbl/0.7.4/fastspring-builder.min.js"
   type="text/javascript"
   {% if webhook %}
   data-popup-webhook-received="fastspringOnPopupWebhookReceived"
