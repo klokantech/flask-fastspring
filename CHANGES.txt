@@ -1,3 +1,4 @@
+v1.11, 2017-08-01 -- Update Store Builder library.
 v1.10, 2017-05-26 -- Don't escape URLs in templates.
 v1.9, 2017-05-11 -- Don't encrypt in debug mode.
 v1.8, 2017-05-04 -- Process webhook immediately after purchase.
