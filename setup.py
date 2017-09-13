@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='Flask-FastSpring',
-    version='1.11',
+    version='1.12',
     description='FastSpring API integration for Flask',
     py_modules=['flask_fastspring'],
     install_requires=[
