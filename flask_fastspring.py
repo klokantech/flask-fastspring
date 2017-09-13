@@ -2,7 +2,6 @@ import json
 import requests
 
 from base64 import b64encode
-from cryptography.hazmat.backends import _available_backends
 from cryptography.hazmat.primitives.ciphers import Cipher
 from cryptography.hazmat.primitives.ciphers.algorithms import AES
 from cryptography.hazmat.primitives.ciphers.modes import ECB
@@ -56,7 +55,8 @@ class FastSpring:
             return
         private_key = app.config.get('FASTSPRING_PRIVATE_KEY')
         if private_key is not None:
-            self.openssl = openssl_backend()
+            from cryptography.hazmat.backends.openssl.backend import backend
+            self.openssl = backend
             with open(private_key, 'rb') as fp:
                 self.private_key = load_pem_private_key(
                     fp.read(), password=None, backend=self.openssl)
@@ -217,14 +217,6 @@ class APIError(Exception):
             self.response.request.url,
             self.response.status_code,
             self.response.text)
-
-
-def openssl_backend():
-    """Return OpenSSL cryptography backend or fail."""
-    for backend in _available_backends():
-        if backend.name == 'openssl':
-            return backend
-    raise Exception('Could not find OpenSSL cryptography backend')
 
 
 def openssl_private_encrypt(key, data, backend):
