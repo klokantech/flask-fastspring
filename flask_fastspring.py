@@ -128,14 +128,28 @@ class FastSpring:
     def fetch_subscription(self, subscription_id):
         return self.fetch('/subscriptions/{}'.format(subscription_id))
 
+    def cancel_subscription(self, subscription_id, immediately=True):
+        params = {}
+        if immediately:
+            params['billingPeriod'] = '0'
+        return self.request(
+            'DELETE',
+            '/subscriptions/{}'.format(subscription_id),
+            params=params)
+
     def fetch(self, uri):
-        response = requests.get(
+        return self.request('GET', uri)
+
+    def request(self, method, uri, params=None):
+        response = requests.request(
+            method,
             'https://api.fastspring.com' + uri,
-            auth=(self.username, self.password))
+            auth=(self.username, self.password),
+            params=params)
         if response.status_code != 200:
             raise APIError(response)
         data = response.json()
-        if data['result'] != 'success':
+        if 'result' in data and data['result'] != 'success':
             raise APIError(response)
         return data
 
