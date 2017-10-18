@@ -218,6 +218,10 @@ class SubscriptionMixin:
         self.data = data
         return True
 
+    def cancel(self, immediately=True):
+        return current_app.extensions['fastspring'].cancel_subscription(
+            self.subscription_id, immediately=immediately)
+
 
 class APIError(Exception):
 
