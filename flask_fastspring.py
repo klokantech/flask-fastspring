@@ -154,17 +154,7 @@ class FastSpring:
         return data
 
 
-class OrderMixin:
-
-    order_id = Column(Text, primary_key=True)
-    reference = Column(Text, nullable=False, unique=True)
-    invoice = Column(Text, nullable=False)
-    changed = Column(DateTime(timezone=True), nullable=False)
-    is_complete = Column(Boolean, default=False, nullable=False)
-
-    @declared_attr
-    def data(cls):
-        return deferred(Column(JSON, nullable=False))
+class OrderMethodsMixin:
 
     def synchronize(self):
         data = current_app.extensions['fastspring'].fetch_order(self.order_id)
@@ -188,20 +178,20 @@ class OrderMixin:
         return candidates[0]
 
 
-class SubscriptionMixin:
+class OrderMixin(OrderMethodsMixin):
 
-    subscription_id = Column(Text, primary_key=True)
-    begin = Column(DateTime(timezone=True), nullable=False)
+    order_id = Column(Text, primary_key=True)
+    reference = Column(Text, nullable=False, unique=True)
+    invoice = Column(Text, nullable=False)
     changed = Column(DateTime(timezone=True), nullable=False)
-    next_event = Column(DateTime(timezone=True))
-    next_charge = Column(DateTime(timezone=True))
-    end = Column(DateTime(timezone=True))
-    is_active = Column(Boolean, nullable=False)
-    state = Column(Text, nullable=False)
+    is_complete = Column(Boolean, default=False, nullable=False)
 
     @declared_attr
     def data(cls):
         return deferred(Column(JSON, nullable=False))
+
+
+class SubscriptionMethodsMixin:
 
     def synchronize(self):
         data = current_app.extensions['fastspring'].fetch_subscription(self.subscription_id)  # noqa
@@ -221,6 +211,22 @@ class SubscriptionMixin:
     def cancel(self, immediately=True):
         return current_app.extensions['fastspring'].cancel_subscription(
             self.subscription_id, immediately=immediately)
+
+
+class SubscriptionMixin(SubscriptionMethodsMixin):
+
+    subscription_id = Column(Text, primary_key=True)
+    begin = Column(DateTime(timezone=True), nullable=False)
+    changed = Column(DateTime(timezone=True), nullable=False)
+    next_event = Column(DateTime(timezone=True))
+    next_charge = Column(DateTime(timezone=True))
+    end = Column(DateTime(timezone=True))
+    is_active = Column(Boolean, nullable=False)
+    state = Column(Text, nullable=False)
+
+    @declared_attr
+    def data(cls):
+        return deferred(Column(JSON, nullable=False))
 
 
 class APIError(Exception):
