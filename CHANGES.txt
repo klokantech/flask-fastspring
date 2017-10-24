@@ -1,3 +1,4 @@
+v1.15, 2017-10-24 -- Split mixin methods from table definitions.
 v1.14, 2017-10-18 -- Add subscription.cancel() method.
 v1.13, 2017-10-18 -- Add cancel_subscription method, general request method.
 v1.12, 2017-09-13 -- Import OpenSSL Cryptography backend directly.
