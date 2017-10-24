@@ -140,12 +140,12 @@ class FastSpring:
     def fetch(self, uri):
         return self.request('GET', uri)
 
-    def request(self, method, uri, params=None):
+    def request(self, method, uri, **kwargs):
         response = requests.request(
             method,
             'https://api.fastspring.com' + uri,
             auth=(self.username, self.password),
-            params=params)
+            **kwargs)
         if response.status_code != 200:
             raise APIError(response)
         data = response.json()
