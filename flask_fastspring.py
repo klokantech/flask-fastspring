@@ -159,7 +159,7 @@ class OrderMethodsMixin:
     def synchronize(self):
         data = current_app.extensions['fastspring'].fetch_order(self.order_id)
         changed = milliseconds_to_datetime(data['changed'])
-        if self.changed is not None and self.changed >= changed:
+        if self.changed is not None and self.changed >= changed and self.is_complete == data.get('completed'):
             return False
         self.reference = data['reference']
         self.invoice = data['invoiceUrl']
@@ -196,7 +196,8 @@ class SubscriptionMethodsMixin:
     def synchronize(self):
         data = current_app.extensions['fastspring'].fetch_subscription(self.subscription_id)  # noqa
         changed = milliseconds_to_datetime(data['changed'])
-        if self.changed is not None and self.changed >= changed:
+        next_event = milliseconds_to_datetime(data.get('next'))
+        if self.changed is not None and self.changed >= changed and self.next_event >= next_event and self.state == data.get('state'):
             return False
         self.begin = milliseconds_to_datetime(data['begin'])
         self.changed = changed
