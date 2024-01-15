@@ -1,3 +1,4 @@
+v1.18, 2024-01-15 -- Fixed Markup import.
 v1.17, 2018-03-19 -- Fixed synchronize method in Order and Subscription #9.
 v1.16, 2017-10-24 -- Pass along all keyword arguments in request().
 v1.15, 2017-10-24 -- Split mixin methods from table definitions.

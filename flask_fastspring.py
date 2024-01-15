@@ -1,15 +1,16 @@
 import json
-import requests
-
 from base64 import b64encode
+from datetime import datetime
+from os import urandom
+
+import requests
 from cryptography.hazmat.primitives.ciphers import Cipher
 from cryptography.hazmat.primitives.ciphers.algorithms import AES
 from cryptography.hazmat.primitives.ciphers.modes import ECB
 from cryptography.hazmat.primitives.padding import PKCS7
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
-from datetime import datetime
-from flask import Markup, current_app, render_template_string
-from os import urandom
+from flask import current_app, render_template_string
+from markupsafe import Markup
 from psycopg2.tz import FixedOffsetTimezone
 from sqlalchemy import Boolean, Column, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSON

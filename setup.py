@@ -6,8 +6,9 @@ setup(
     description='FastSpring API integration for Flask',
     py_modules=['flask_fastspring'],
     install_requires=[
-        'Flask>=0.11',
+        'Flask>=3.0',
         'SQLAlchemy>=1.0',
         'cryptography>=1.6',
         'requests>=2.12',
+        'markupsafe>=1.0'
     ])
