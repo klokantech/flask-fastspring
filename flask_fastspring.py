@@ -1,6 +1,6 @@
 import json
 from base64 import b64encode
-from datetime import datetime
+from datetime import datetime, UTC
 from os import urandom
 
 import requests
@@ -11,7 +11,6 @@ from cryptography.hazmat.primitives.padding import PKCS7
 from cryptography.hazmat.primitives.serialization import load_pem_private_key
 from flask import current_app, render_template_string
 from markupsafe import Markup
-from psycopg2.tz import FixedOffsetTimezone
 from sqlalchemy import Boolean, Column, DateTime, Text
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.declarative import declared_attr
@@ -265,13 +264,10 @@ def openssl_private_encrypt(key, data, backend):
     return backend._ffi.buffer(buffer)[:]
 
 
-UTC = FixedOffsetTimezone(offset=0)
-
-
 def milliseconds_to_datetime(m):
     if m is None:
         return None
-    return datetime.utcfromtimestamp(m / 1000).replace(tzinfo=UTC)
+    return datetime.fromtimestamp(m / 1000, UTC)
 
 
 HEAD_TEMPLATE = """\
